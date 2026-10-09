@@ -66,7 +66,7 @@ def montar_usuario(linha):
     return Usuario(linha)
 
 
-def buscar_usuario_por_id(usuario_id):
+def buscar_id(usuario_id):
     with conectar() as conexao:
         linha = conexao.execute(
             "SELECT * FROM usuarios WHERE id = ?",
@@ -75,7 +75,7 @@ def buscar_usuario_por_id(usuario_id):
     return montar_usuario(linha)
 
 
-def buscar_usuario_por_email(email):
+def buscar_email(email):
     with conectar() as conexao:
         linha = conexao.execute(
             "SELECT * FROM usuarios WHERE email = ?",
@@ -93,63 +93,64 @@ def criar_usuario(nome, email, senha_hash):
             """,
             (nome, email, senha_hash),
         )
-    return buscar_usuario_por_id(cursor.lastrowid)
+    return buscar_id(cursor.lastrowid)
 
 
-def listar_leituras():
+def listar_leituras(usuario_id):
     with conectar() as conexao:
         return conexao.execute(
-            "SELECT * FROM leituras ORDER BY id DESC"
+            "SELECT * FROM leituras WHERE usuario_id = ? ORDER BY id DESC",
+            (usuario_id,),
         ).fetchall()
 
 
-def buscar_leitura(leitura_id):
+def buscar_leitura(leitura_id, usuario_id):
     with conectar() as conexao:
         return conexao.execute(
-            "SELECT * FROM leituras WHERE id = ?",
-            (leitura_id,),
+            "SELECT * FROM leituras WHERE id = ? AND usuario_id = ?",
+            (leitura_id, usuario_id),
         ).fetchone()
 
 
-def criar_leitura(titulo, autor, paginas):
+def criar_leitura(usuario_id, titulo, autor, paginas):
     with conectar() as conexao:
         conexao.execute(
             """
-            INSERT INTO leituras (titulo, autor, paginas)
-            VALUES (?, ?, ?)
+            INSERT INTO leituras (usuario_id, titulo, autor, paginas)
+            VALUES (?, ?, ?, ?)
             """,
-            (titulo, autor, paginas),
+            (usuario_id, titulo, autor, paginas),
         )
 
 
-def atualizar_leitura(leitura_id, titulo, autor, paginas):
+def atualizar_leitura(leitura_id, usuario_id, titulo, autor, paginas):
     with conectar() as conexao:
         conexao.execute(
             """
             UPDATE leituras
             SET titulo = ?, autor = ?, paginas = ?
-            WHERE id = ?
+            WHERE id = ? AND usuario_id = ?
             """,
-            (titulo, autor, paginas, leitura_id),
+            (titulo, autor, paginas, leitura_id, usuario_id),
         )
 
 
-def alternar_concluida(leitura_id):
-    leitura = buscar_leitura(leitura_id)
+def alternar_concluida(leitura_id, usuario_id):
+    leitura = buscar_leitura(leitura_id, usuario_id)
     if leitura is None:
         return
 
     novo_status = 0 if leitura["concluida"] else 1
     with conectar() as conexao:
         conexao.execute(
-            "UPDATE leituras SET concluida = ? WHERE id = ?",
-            (novo_status, leitura_id),
+            "UPDATE leituras SET concluida = ? WHERE id = ? AND usuario_id = ?",
+            (novo_status, leitura_id, usuario_id),
         )
 
 
-def excluir_leitura(leitura_id):
+def excluir_leitura(leitura_id, usuario_id):
     with conectar() as conexao:
         conexao.execute(
-            "DELETE FROM leituras WHERE id = ?",
-            (leitura_id,),
+            "DELETE FROM leituras WHERE id = ? AND usuario_id = ?",
+            (leitura_id, usuario_id),
         )
